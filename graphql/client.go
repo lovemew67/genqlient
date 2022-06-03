@@ -125,6 +125,13 @@ func (c *client) MakeRequest(ctx context.Context, opName string, query string, r
 		return fmt.Errorf("returned error %v: %s", resp.Status, respBody)
 	}
 
+	// special rate limit handling for woztell
+	// "Retry-After" header will be present in response header once got rate limited
+	cooldown, ok := resp.Header["Retry-After"]
+	if ok {
+		return fmt.Errorf("too many request, please retry after: %s, seconds", cooldown)
+	}
+
 	var dataAndErrors response
 	dataAndErrors.Data = retval
 	err = json.NewDecoder(resp.Body).Decode(&dataAndErrors)
